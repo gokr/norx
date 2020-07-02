@@ -1,6 +1,21 @@
 import os
 
-import norx/[incl, param, module, event, clock, memory, oobject, viewport]
+import norx/[incl, config, param, module, event, clock, memory]
+
+template init*(body: untyped): untyped {.dirty.} =
+  proc initProc(): orxSTATUS {.cdecl.} = body
+
+template run*(body: untyped): untyped {.dirty.} =
+  proc runProc(): orxSTATUS {.cdecl.} = body
+
+template exit*(body: untyped) {.dirty.} =
+  proc exitProc() {.cdecl.} = body
+
+template bootstrap*(body: untyped): untyped {.dirty.} =
+  proc bootstrapProc(): orxSTATUS {.cdecl.} = body
+
+template execute*() {.dirty.} =
+  execute(initProc, runProc, exitProc, bootstrapProc)
 
 when not defined(PLUGIN):
   ## Should stop execution by default event handling?
@@ -111,8 +126,10 @@ when not defined(PLUGIN):
       ##  @param[in]   _pfnExit                      Main exit function (should clean all the main stuff)
       ##
       proc execute*(initProc: proc(): orxSTATUS {.cdecl.};
-                       runProc: proc(): orxSTATUS {.cdecl.};
-                       exitProc: proc() {.cdecl.}) {.inline} =
+                    runProc: proc(): orxSTATUS {.cdecl.};
+                    exitProc: proc() {.cdecl.};
+                    bootstrapProc: proc(): orxSTATUS {.cdecl.}) {.inline} =
+        discard setBootstrap(bootstrapProc)
         ## Inits the Debug System
         orxDEBUG_INIT_MACRO()
         ## Checks

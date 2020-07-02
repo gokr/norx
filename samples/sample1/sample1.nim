@@ -1,11 +1,10 @@
 ## This is a port of the trivial sample that ORX comes with.
 ## Things can be fixed and cleaned, but it runs!
-
 import os
 
 import norx, norx/[incl, clock, event, system, config, resource, input, viewport, obj]
 
-proc Update(clockInfo: ptr orxCLOCK_INFO, context: pointer) =
+proc update(clockInfo: ptr orxCLOCK_INFO, context: pointer) {.cdecl.} =
   ## Update function, it has been registered to be called every tick of the core clock
   # Should we quit due to user pressing ESC?
   if isActive("Quit"):
@@ -13,7 +12,7 @@ proc Update(clockInfo: ptr orxCLOCK_INFO, context: pointer) =
     echo "User quitting"
     discard sendShort(orxEVENT_TYPE_SYSTEM, orxSYSTEM_EVENT_CLOSE.orxU32)
 
-proc init(): orxSTATUS {.cdecl.} =
+init:
   ## Init function, it is called when all orx's modules have been initialized
   orxLOG("Sample1 starting")
 
@@ -31,40 +30,30 @@ proc init(): orxSTATUS {.cdecl.} =
   let clock = clockGet(orxCLOCK_KZ_CORE)
   if not clock.isNil:
     echo "Clock gotten"
-  var status = clock.register(cast[orxCLOCK_FUNCTION](Update), nil, orxMODULE_ID_MAIN, orxCLOCK_PRIORITY_NORMAL)
+  var status = clock.register(update, nil, orxMODULE_ID_MAIN, orxCLOCK_PRIORITY_NORMAL)
   if status == orxSTATUS_SUCCESS:
     echo "Clock registered"
 
   # Done!
   return orxSTATUS_SUCCESS
 
-proc run(): orxSTATUS {.cdecl.} =
+run:
   ## Run function, it should not contain any game logic
   # Return orxSTATUS_FAILURE to instruct orx to quit
   return orxSTATUS_SUCCESS
 
-proc exit() {.cdecl.} =
+exit:
   ## Exit function, it is called before exiting from orx
   echo "Exit called"
 
-proc bootstrap(): orxSTATUS =
+bootstrap:
   ## Bootstrap function, it is called before config is initialized, allowing for early resource storage definitions
   # Add a config storage to find the initial config file
-  var dir = getCurrentDir()
-  var status = addStorage(orxCONFIG_KZ_RESOURCE_GROUP, $dir & "/data/config", orxFALSE)
+  var status = addStorage(orxCONFIG_KZ_RESOURCE_GROUP, $getCurrentDir() & "/data/config", orxFALSE)
   if status == orxSTATUS_SUCCESS:
     echo "Added storage"
   # Return orxSTATUS_FAILURE to prevent orx from loading the default config file
   return orxSTATUS_SUCCESS
 
-when isMainModule:
-  # Set the bootstrap function to provide at least one resource storage before loading any config files
-  var status = setBootstrap(cast[orxCONFIG_BOOTSTRAP_FUNCTION](bootstrap))
-  if status == orxSTATUS_SUCCESS:
-    echo "Bootstrap was set"
-
-  # Execute our game
-  execute(init, run, exit)
-
-  # Done!
-  quit(0)
+# Start ORX
+execute()
